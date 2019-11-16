@@ -58,7 +58,6 @@ public class Drivetrain implements Subsystem {
         bulkData = expansionHub.getBulkInputData();
         switch(currentState) {
             case CLOSED_LOOP:
-                setTargetVelocity
         }
     }
 
