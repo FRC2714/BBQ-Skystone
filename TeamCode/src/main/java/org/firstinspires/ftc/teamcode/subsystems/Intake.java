@@ -5,14 +5,12 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import javax.security.auth.Subject;
-
 public class Intake implements Subsystem {
+
+    private HardwareMap hardwareMap;
 
     private DcMotorEx intakeMotor;
     private Servo intakeServo;
-
-    private HardwareMap hardwareMap;
 
     public ServoState servoState = ServoState.OPEN;
     public IntakeState intakeState = IntakeState.IDLE;
@@ -26,6 +24,11 @@ public class Intake implements Subsystem {
         intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
+    @Override
+    public void update() {
+
+    }
+
     public void resetEncoders() {
         intakeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
@@ -33,12 +36,6 @@ public class Intake implements Subsystem {
     public void runUsingEncoders() {
         intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
-
-    @Override
-    public void update() {
-
-    }
-
 
     private enum ServoState {
         OPEN,
