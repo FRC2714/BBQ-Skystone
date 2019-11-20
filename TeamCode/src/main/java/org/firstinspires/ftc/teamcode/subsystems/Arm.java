@@ -84,6 +84,7 @@ public class Arm implements Subsystem {
                                     if(isArmAtTarget()) {
                                         macroRunOnce = false;
                                     }
+                                    break;
                             }
                             break;
                     }
