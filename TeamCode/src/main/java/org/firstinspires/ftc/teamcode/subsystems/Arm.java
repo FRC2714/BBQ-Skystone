@@ -22,7 +22,7 @@ public class Arm implements Subsystem {
 
     private double userArmPower;
 
-    private boolean macroRunOnce = true;
+    private boolean macroRunAgain = true;
 
     private Telemetry tele;
 
@@ -50,24 +50,23 @@ public class Arm implements Subsystem {
     public void update() {
         switch (controlMode){
             case MACRO_CONTROL:
-                if (!armMotor.isBusy() || macroRunOnce){
-
+                if (!armMotor.isBusy() || macroRunAgain){
                     switch (targetArmState) {
                         case START:
                             goToPosition(-10, 0.5);
-                            macroRunOnce = false;
+                            macroRunAgain = false;
                             break;
                         case HIGH_HOLD:
                             goToPosition(-350, 1);
-                            macroRunOnce = false;
+                            macroRunAgain = false;
                             break;
                         case LOW_HOLD:
                             goToPosition(-1100, 1);
-                            macroRunOnce = false;
+                            macroRunAgain = false;
                             break;
                         case STONE_PICKUP:
                             goToPosition(-1470, 1);
-                            macroRunOnce = false;
+                            macroRunAgain = false;
                             break;
                         case AUTO_PICKUP:
                             switch (armMacroIterator){
@@ -80,21 +79,23 @@ public class Arm implements Subsystem {
                                     }
                                     break;
                                 case LOW_HOLD:
-                                    count += 1000000;
-                                    goToPosition(-1100, 1);
-                                    if(isArmAtTarget()) {
-                                        macroRunOnce = false;
+                                    if(Intake.getInstance(hm,tele).intakeMacroIterator == Intake.IntakeMacroIterator.HOLDING) {
+                                        count += 1000000;
+                                        goToPosition(-1100, 1);
+                                        if (isArmAtTarget()) {
+                                            macroRunAgain = false;
+                                        }
                                     }
                                     break;
                             }
                             break;
                     }
                 }
-                if(isArmAtTarget() && !macroRunOnce) {
+                if(isArmAtTarget() && !macroRunAgain) {
                     controlMode = ControlMode.MANUAL_CONTROL;
                     armMacroIterator = ArmMacroIterator.STONE_PICKUP;
                     currentArmState = targetArmState;
-                    macroRunOnce = true;
+                    macroRunAgain = true;
                 }
                 break;
             case MANUAL_CONTROL:
@@ -129,6 +130,10 @@ public class Arm implements Subsystem {
         return new ArmState[]{targetArmState, currentArmState};
     }
 
+    public ArmMacroIterator getArmMacroIterator(){
+        return armMacroIterator;
+    }
+
     public void setArmTargetState(ControlMode controlMode, ArmState armState){
         targetArmState = armState;
         this.controlMode = controlMode;
@@ -153,7 +158,7 @@ public class Arm implements Subsystem {
         MACRO_CONTROL
     }
 
-    private enum ArmMacroIterator{
+    public enum ArmMacroIterator{
         STONE_PICKUP,
         LOW_HOLD
     }

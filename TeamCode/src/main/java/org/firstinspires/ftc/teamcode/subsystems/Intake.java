@@ -10,12 +10,14 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 public class Intake implements Subsystem {
 
     private HardwareMap hardwareMap;
+    private Telemetry tele;
 
     private DcMotorEx intakeMotor;
     private Servo intakeServo;
 
     public ServoState servoState = ServoState.OPEN;
     public MotorState motorState = MotorState.IDLE;
+    public IntakeMacroIterator intakeMacroIterator = IntakeMacroIterator.READY_FOR_STONE;
 
     private ControlMode controlMode;
 
@@ -30,7 +32,7 @@ public class Intake implements Subsystem {
 
     public Intake(HardwareMap hardwareMap, Telemetry telemetry){
         this.hardwareMap = hardwareMap;
-
+        tele = telemetry;
         intakeMotor = this.hardwareMap.get(DcMotorEx.class, "intake_motor");
         intakeServo = this.hardwareMap.get(Servo.class, "intake_servo");
 
@@ -44,6 +46,18 @@ public class Intake implements Subsystem {
         switch (controlMode){
             case MACRO_CONTROL:
 
+                switch (intakeMacroIterator){
+                    case READY_FOR_STONE:
+                        intakeMotor.setPower(1);
+                        intakeServo.setPosition(0.7);
+                        if(Arm.getInstance(hardwareMap, tele).getArmMacroIterator() == Arm.ArmMacroIterator.LOW_HOLD)
+                            intakeMacroIterator = IntakeMacroIterator.GRAB_STONE;
+                        break;
+                    case GRAB_STONE:
+                        intakeMotor.setPower(1);
+                        intakeServo.setPosition(0.4);
+                        break;
+                }
                 break;
             case MANUAL_CONTROL:
                 count++;
@@ -68,6 +82,10 @@ public class Intake implements Subsystem {
         this.servoState = servoState;
     }
 
+    public IntakeMacroIterator getIntakeMacroIterator() {
+        return intakeMacroIterator;
+    }
+
     public void resetEncoders() {
         intakeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
@@ -75,6 +93,9 @@ public class Intake implements Subsystem {
     public void runUsingEncoders() {
         intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
+
+    private boolean startedTimer = false;
+    
 
     public enum ServoState {
         OPEN,
@@ -91,6 +112,12 @@ public class Intake implements Subsystem {
     public enum ControlMode{
         MANUAL_CONTROL,
         MACRO_CONTROL
+    }
+
+    public enum IntakeMacroIterator{
+        READY_FOR_STONE,
+        GRAB_STONE,
+        HOLDING,
     }
 
 }
