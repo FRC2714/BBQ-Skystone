@@ -20,7 +20,9 @@ public class Arm implements Subsystem {
     public ControlMode controlMode;
     public ArmMacroIterator armMacroIterator;
 
-    boolean macroRunOnce = true;
+    private double userArmPower;
+
+    private boolean macroRunOnce = true;
 
     private Telemetry tele;
 
@@ -46,7 +48,6 @@ public class Arm implements Subsystem {
     public int count = 0;
     @Override
     public void update() {
-
         switch (controlMode){
             case MACRO_CONTROL:
                 if (!armMotor.isBusy() || macroRunOnce){
@@ -97,7 +98,7 @@ public class Arm implements Subsystem {
                 }
                 break;
             case MANUAL_CONTROL:
-                armMotor.setPower(0);
+                armMotor.setPower(userArmPower);
                 break;
         }
     }
@@ -133,6 +134,10 @@ public class Arm implements Subsystem {
         this.controlMode = controlMode;
         tele.addData("Setting Arm Target State", 0);
         tele.update();
+    }
+
+    public void setArmPower(double power){
+        userArmPower = power;
     }
 
     public enum ArmState {
