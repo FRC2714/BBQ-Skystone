@@ -4,8 +4,11 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+
+import java.util.concurrent.TimeUnit;
 
 public class Intake implements Subsystem {
 
@@ -14,6 +17,8 @@ public class Intake implements Subsystem {
 
     private DcMotorEx intakeMotor;
     private Servo intakeServo;
+
+    private ElapsedTime elapsedTime;
 
     public ServoState servoState = ServoState.OPEN;
     public MotorState motorState = MotorState.IDLE;
@@ -54,8 +59,15 @@ public class Intake implements Subsystem {
                             intakeMacroIterator = IntakeMacroIterator.GRAB_STONE;
                         break;
                     case GRAB_STONE:
-                        intakeMotor.setPower(1);
                         intakeServo.setPosition(0.4);
+                        if(runIntakeMotorForTime(0.4)){
+                            intakeMacroIterator = IntakeMacroIterator.HOLDING;
+                        }
+                        break;
+                    case HOLDING:
+                        intakeMotor.setPower(0.05);
+                        controlMode = ControlMode.MANUAL_CONTROL;
+                        intakeMacroIterator = IntakeMacroIterator.READY_FOR_STONE;
                         break;
                 }
                 break;
@@ -95,7 +107,17 @@ public class Intake implements Subsystem {
     }
 
     private boolean startedTimer = false;
-    
+    public boolean runIntakeMotorForTime(double seconds){
+        if(!startedTimer) {
+            elapsedTime = new ElapsedTime(0);
+            startedTimer = true;
+        }
+        if(elapsedTime.time(TimeUnit.SECONDS) > seconds)
+            return true;
+        else
+            intakeMotor.setPower(1);
+        return false;
+    }
 
     public enum ServoState {
         OPEN,
