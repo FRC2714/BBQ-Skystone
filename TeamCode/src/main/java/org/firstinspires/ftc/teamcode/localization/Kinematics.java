@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Kinematics {
-    static Pose2d fieldToRobotPoseVelocity(Pose2d fieldPose, Pose2d fieldPoseVelocity) {
+    public static Pose2d fieldToRobotPoseVelocity(Pose2d fieldPose, Pose2d fieldPoseVelocity) {
         return new Pose2d(fieldPoseVelocity.vec().rotated(-fieldPose.heading), fieldPoseVelocity.heading);
     }
 
-    static List<Double> calculateMotorFeedforward(List<Double> velocities, List<Double> acclerations, double kV, double kA, double kStatic) {
+    public static List<Double> calculateMotorFeedforward(List<Double> velocities, List<Double> acclerations, double kV, double kA, double kStatic) {
         List<Double> motorPowers = new ArrayList<>();
         for (double v : velocities) {
             for (double a: acclerations) {
