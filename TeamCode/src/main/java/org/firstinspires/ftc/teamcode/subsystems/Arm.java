@@ -72,7 +72,7 @@ public class Arm implements Subsystem {
                             switch (armMacroIterator){
                                 case STONE_PICKUP:
                                     count++;
-                                    goToPosition(-1470, 1);
+                                    goToPosition(-1500, 1);
                                     if(isArmAtTarget()) {
                                         armMacroIterator = ArmMacroIterator.LOW_HOLD;
                                     }

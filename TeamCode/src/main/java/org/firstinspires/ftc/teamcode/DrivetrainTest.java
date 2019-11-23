@@ -2,12 +2,13 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.localization.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.JoystickTransform;
 
-@Autonomous(name="gay")
-public class TeleopTest extends LinearOpMode {
+@TeleOp(name="DrivetrainTest")
+public class DrivetrainTest extends LinearOpMode {
     Robot robot;
     JoystickTransform transform;
     @Override
