@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDCoefficients;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -20,9 +21,12 @@ import org.openftc.revextensions2.ExpansionHubMotor;
 import org.openftc.revextensions2.RevBulkData;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Drivetrain implements Subsystem {
+
+    private static final int TICKS_PER_INCH = 30;
     private ExpansionHubEx expansionHub;
     private RevBulkData bulkData;
     private HardwareMap hwMap;
@@ -32,19 +36,30 @@ public class Drivetrain implements Subsystem {
 
     private BNO055IMU imu;
 
+    // Coeffecients
+    PIDCoefficients translationalCoeffecients = new PIDCoefficients(0.8,0,0);
+    PIDCoefficients lateralCoeffecients = new PIDCoefficients(0.5,0,0);
+    PIDCoefficients headingCoeffecients = new PIDCoefficients(0.9,0,0);
+
     // PIDF Controllers
-    private PIDFController translationalController;
-    private PIDFController lateralController;
-    private PIDFController headingController;
+    private PIDFController translationalController = new PIDFController(translationalCoeffecients, 0.0, 0,0);
+    private PIDFController lateralController = new PIDFController(lateralCoeffecients, 0.0,0.0,0.0);
+    private PIDFController headingController = new PIDFController(headingCoeffecients, 0.225, 0.0,0.0);
 
     // targets
-    private Pose2d targetVelocity = new Pose2d(0.0,0.0,0.0);
+    private Pose2d targetVelocity = new Pose2d(0.0,0.0,0.0); // MAKE SURE THIS STARTS AS 0
 
     // current values
-    private State currentState = State.TELEOP;
+    private State currentState = State.CLOSED_LOOP;
     private Pose2d currentVelocity  = new Pose2d();
     private double currentRawHeading = 0.0;
+    private Pose2d currentEstimatedPose = new Pose2d();
+    private List<Double> currentWheelPositions;
+
+    // previous values (for deltas)
     private List<Double> lastWheelPositions;
+    private double lastRawHeading = 0.0;
+    private Pose2d targetPose = new Pose2d(100,0,0);
 
     // constants
     private static final double TELEOP_MAX_V = 45;
@@ -72,6 +87,11 @@ public class Drivetrain implements Subsystem {
         p.angleUnit = BNO055IMU.AngleUnit.RADIANS;
         imu.initialize(p);
 
+        frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
         frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -86,25 +106,51 @@ public class Drivetrain implements Subsystem {
         frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
 
         lastWheelPositions = new ArrayList<>();
+        currentWheelPositions = new ArrayList<>();
     }
 
     @Override
     public void update() {
         bulkData = expansionHub.getBulkInputData();
-
         currentRawHeading = getRawHeading();
+        currentWheelPositions = getWheelPositions();
+        currentEstimatedPose = getEstimatedPose();
         t.addData("heading: ", Math.toDegrees(currentRawHeading));
         t.addData("normHeading: ", Math.toDegrees(norm(currentRawHeading)));
-
+        
         switch(currentState) {
             case TELEOP:
                 setRobotKinematics(targetVelocity, new Pose2d()); // leaving acceleration empty
                 break;
+            case CLOSED_LOOP:
+                translationalController.targetPosition = targetPose.x - currentEstimatedPose.x;
+                lateralController.targetPosition = targetPose.y - currentEstimatedPose.y;
+                headingController.targetPosition = targetPose.heading - currentEstimatedPose.heading;
+
+                double translationalCorrection = translationalController.update(0,targetVelocity.x,0.0);
+                double lateralCorrection = lateralController.update(0,targetVelocity.y, 0.0);
+                double headingCorrection = headingController.update(0,targetVelocity.heading,0.0);
+
+                Pose2d velocityCorrection = new Pose2d(translationalCorrection, lateralCorrection, headingCorrection);
+                setRobotKinematics(targetVelocity.plus(velocityCorrection), new Pose2d());
         }
 
         t.addData("Target Velocity x: ", targetVelocity.x);
         t.addData("Target velo y: ", targetVelocity.y);
         t.addData("target velo z: ", targetVelocity.heading);
+
+        List<Integer> wheelCounts = getWheelCounts();
+        t.addData("FL Counts: ", wheelCounts.get(0));
+        t.addData("BL Counts: ", wheelCounts.get(1));
+        t.addData("BR Counts: ", wheelCounts.get(2));
+        t.addData("FR Counts: ", wheelCounts.get(3));
+
+        lastRawHeading = currentRawHeading;
+        lastWheelPositions = currentWheelPositions;
+
+        t.addData("X: ", currentEstimatedPose.x);
+        t.addData("Y: ", currentEstimatedPose.y);
+        t.addData("heading: ", currentEstimatedPose.heading);
     }
 
     public void setTargetVelocity(Pose2d targetVelocity) {
@@ -142,6 +188,33 @@ public class Drivetrain implements Subsystem {
         t.addData("theta: ", theta);
         double omega = target.heading * TELEOP_MAX_HEADING_V;
         setTargetVelocity(new Pose2d(v * Math.cos(theta), v*Math.sin(theta), omega));
+    }
+
+    private List<Integer> getWheelCounts() {
+        if (bulkData == null) return Arrays.asList(0,0,0,0);
+        return Arrays.asList(bulkData.getMotorCurrentPosition(frontLeft),bulkData.getMotorCurrentPosition(backLeft),
+                bulkData.getMotorCurrentPosition(backRight), bulkData.getMotorCurrentPosition(frontRight));
+    }
+
+    private List<Double> getWheelPositions() {
+        if (bulkData == null) return Arrays.asList(0.0,0.0,0.0,0.0);
+        double flInches = bulkData.getMotorCurrentPosition(frontLeft) / TICKS_PER_INCH;
+        double blInches = bulkData.getMotorCurrentPosition(backLeft) / TICKS_PER_INCH;
+        double brInches = bulkData.getMotorCurrentPosition(backRight) / TICKS_PER_INCH;
+        double frInches = bulkData.getMotorCurrentPosition(frontRight) / TICKS_PER_INCH;
+
+        return Arrays.asList(flInches, blInches, brInches, frInches);
+    }
+
+    public Pose2d getEstimatedPose() {
+        if (!lastWheelPositions.isEmpty()) {
+            List<Double> wheelDeltas = new ArrayList<>();
+            for (int i = 0; i < currentWheelPositions.size(); i++) wheelDeltas.add(currentWheelPositions.get(i) - lastWheelPositions.get(i));
+            Pose2d poseDelta = MecanumKinematics.wheelToRobotVelocity(wheelDeltas, 13);
+            double headingDelta = norm(currentRawHeading - lastRawHeading);
+            return Kinematics.odometryUpdate(currentEstimatedPose, new Pose2d(poseDelta.vec(), headingDelta));
+        }
+        return currentEstimatedPose;
     }
 
     // getters

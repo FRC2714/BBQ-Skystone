@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.utils;
 
+import android.util.Log;
+
 import com.qualcomm.robotcore.hardware.PIDCoefficients;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
@@ -16,14 +18,17 @@ public class PIDFController {
     private double maxOutput = 0.0;
 
     // Controller setpoint
-    private double targetPosition = 0.0;
+    public double targetPosition = 0.0;
     private double lastError = 0.0;
 
     private PIDCoefficients pid;
     private double kV, kA, kStatic = 0.0;
 
     public PIDFController(PIDCoefficients pid, double kV, double kA, double kStatic) { // TODO: add kF
-
+        this.pid = pid;
+        this.kV = kV;
+        this.kA = kA;
+        this.kStatic = kStatic;
     }
 
     public void setInputBounds(double min, double max) {
@@ -61,9 +66,9 @@ public class PIDFController {
     }
 
     private double internalUpdate(double pos, double velocity, double acceleration) {
-        double currentTimestamp = System.currentTimeMillis() * 10e3;
-        double error = getError(pos);
-        if (Double.isNaN(currentTimestamp)) {
+        double currentTimestamp = System.currentTimeMillis() / 10e3;
+        double error = targetPosition - pos;
+        if (Double.isNaN(lastUpdateTimestamp)) {
             lastError = error;
             lastUpdateTimestamp = currentTimestamp;
             return 0.0;
@@ -71,13 +76,14 @@ public class PIDFController {
             double dt = currentTimestamp - lastUpdateTimestamp;
             errorSum += 0.5 * (error + lastError) * dt;
             double errorDeriv = (error - lastError) / dt;
+            Log.d("dt: ", dt+"");
 
             lastError = error;
             lastUpdateTimestamp = currentTimestamp;
 
             double baseOutput = pid.p * error + pid.i * errorSum + pid.d * (errorDeriv - velocity)
                     + kV * velocity + kA * acceleration; // add kf soon
-
+            Log.d("baseOutput: ", baseOutput+"");
             double output;
             if (Math.abs(baseOutput - 0.0) < 0.001) {
                 output = 0.0;

@@ -22,7 +22,7 @@ public class Kinematics {
      * @
      */
 
-    static Pose2d odometryUpdate(Pose2d fieldPose, Pose2d robotPoseDelta) {
+    public static Pose2d odometryUpdate(Pose2d fieldPose, Pose2d robotPoseDelta) {
         Pose2d fieldPoseDelta;
 
         if (Math.abs(robotPoseDelta.heading) > 1e-6) {
