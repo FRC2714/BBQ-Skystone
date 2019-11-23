@@ -27,7 +27,7 @@ public class Drivetrain implements Subsystem {
     private RevBulkData bulkData;
     private HardwareMap hwMap;
 
-    private DcMotorEx frontLeft, frontRight, backLeft, backRight;
+    private ExpansionHubMotor frontLeft, frontRight, backLeft, backRight;
     private List<ExpansionHubMotor> motors;
 
     private BNO055IMU imu;
@@ -62,11 +62,10 @@ public class Drivetrain implements Subsystem {
         this.hwMap = map;
         this.expansionHub = hwMap.get(ExpansionHubEx.class, "Expansion Hub 2");
 
-        frontLeft = (DcMotorEx) hwMap.dcMotor.get("left_front");
-        frontRight = (DcMotorEx) hwMap.dcMotor.get("right_front");
-        backLeft = (DcMotorEx) hwMap.dcMotor.get("left_back");
-        backRight = (DcMotorEx) hwMap.dcMotor.get("right_back");
-
+        frontLeft = (ExpansionHubMotor) hwMap.dcMotor.get("left_front");
+        frontRight = (ExpansionHubMotor) hwMap.dcMotor.get("right_front");
+        backLeft = (ExpansionHubMotor) hwMap.dcMotor.get("left_back");
+        backRight = (ExpansionHubMotor) hwMap.dcMotor.get("right_back");
 
         imu = hwMap.get(BNO055IMU.class, "imu");
         BNO055IMU.Parameters p = new BNO055IMU.Parameters();
@@ -96,6 +95,7 @@ public class Drivetrain implements Subsystem {
         currentRawHeading = getRawHeading();
         t.addData("heading: ", Math.toDegrees(currentRawHeading));
         t.addData("normHeading: ", Math.toDegrees(norm(currentRawHeading)));
+
         switch(currentState) {
             case TELEOP:
                 setRobotKinematics(targetVelocity, new Pose2d()); // leaving acceleration empty
@@ -114,9 +114,16 @@ public class Drivetrain implements Subsystem {
     private void setRobotKinematics(Pose2d velocity, Pose2d acceleration) {
         List<Double> velocities = MecanumKinematics.robotToWheelVelocites(velocity,13);
         // TODO: add accelerations and feed-forwards
-        t.addData("v1: ", velocities.get(0));
-        t.addData("v2: ", velocities.get(1));
-        setMotorPowers(velocities.get(0), velocities.get(1),velocities.get(2), velocities.get(3));
+        t.addData("fl velocity: ", velocities.get(0));
+        t.addData("bl velocity: ", velocities.get(1));
+        t.addData("br velocity: ", velocities.get(2));
+        t.addData("fr velocities: ", velocities.get(3));
+        List<Double> powers = Kinematics.calculateMotorFeedforward(velocities, new ArrayList<>(), 0.0225, 0.0,0.0);
+        t.addData("fl power: ", powers.get(0));
+        t.addData("bl powers: ", powers.get(1));
+        t.addData("br powers: ",powers.get(2));
+        t.addData("fr powers: ", powers.get(3));
+        setMotorPowers(powers.get(0), powers.get(1),powers.get(2), powers.get(3));
     }
 
     private void setMotorPowers(double fl, double bl, double br, double fr) {
@@ -136,7 +143,6 @@ public class Drivetrain implements Subsystem {
         double omega = target.heading * TELEOP_MAX_HEADING_V;
         setTargetVelocity(new Pose2d(v * Math.cos(theta), v*Math.sin(theta), omega));
     }
-
 
     // getters
 

@@ -74,13 +74,11 @@ public class Arm implements Subsystem {
                                     count++;
                                     goToPosition(-1470, 1);
                                     if(isArmAtTarget()) {
-                                        count += 1000;
                                         armMacroIterator = ArmMacroIterator.LOW_HOLD;
                                     }
                                     break;
                                 case LOW_HOLD:
                                     if(Intake.getInstance(hm,tele).intakeMacroIterator == Intake.IntakeMacroIterator.HOLDING) {
-                                        count += 1000000;
                                         goToPosition(-1100, 1);
                                         if (isArmAtTarget()) {
                                             macroRunAgain = false;
