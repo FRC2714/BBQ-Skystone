@@ -25,8 +25,10 @@ public class ArmTest extends LinearOpMode {
                 arm.setArmTargetState(ControlMode.MACRO_CONTROL, ArmState.LOW_HOLD);
             if(gamepad2.b)
                 arm.setArmTargetState(ControlMode.MACRO_CONTROL, ArmState.HIGH_HOLD);
-            if(gamepad2.x)
+            if(gamepad2.x) {
                 arm.setArmTargetState(ControlMode.MACRO_CONTROL, ArmState.AUTO_PICKUP);
+                intake.setControlMode(Intake.ControlMode.MACRO_CONTROL);
+            }
 
             arm.setArmPower(gamepad2.left_stick_y);
 

@@ -50,7 +50,6 @@ public class Intake implements Subsystem {
     public void update() {
         switch (controlMode){
             case MACRO_CONTROL:
-
                 switch (intakeMacroIterator){
                     case READY_FOR_STONE:
                         intakeMotor.setPower(1);
@@ -104,6 +103,10 @@ public class Intake implements Subsystem {
 
     public void runUsingEncoders() {
         intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public void setControlMode(ControlMode controlMode) {
+        this.controlMode = controlMode;
     }
 
     private boolean startedTimer = false;
