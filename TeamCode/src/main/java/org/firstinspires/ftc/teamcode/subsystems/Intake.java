@@ -46,32 +46,41 @@ public class Intake implements Subsystem {
     }
 
     public int count;
+    private double startingTime;
+    private boolean startedTimer = false;
     @Override
     public void update() {
         switch (controlMode){
             case MACRO_CONTROL:
                 switch (intakeMacroIterator){
                     case READY_FOR_STONE:
-                        intakeMotor.setPower(1);
+                        intakeMotor.setPower(-1);
                         intakeServo.setPosition(0.7);
                         if(Arm.getInstance(hardwareMap, tele).getArmMacroIterator() == Arm.ArmMacroIterator.LOW_HOLD)
                             intakeMacroIterator = IntakeMacroIterator.GRAB_STONE;
                         break;
                     case GRAB_STONE:
+                        count += -2000000;
                         intakeServo.setPosition(0.4);
-                        if(runIntakeMotorForTime(0.4)){
+                        servoState = ServoState.CLOSED;
+                        if(!startedTimer) {
+                            startingTime = System.currentTimeMillis();
+                            startedTimer = true;
+                        }
+
+                        if(System.currentTimeMillis() - startingTime > 0.5e3){
                             intakeMacroIterator = IntakeMacroIterator.HOLDING;
                         }
                         break;
                     case HOLDING:
                         intakeMotor.setPower(0.05);
+                        startedTimer = false;
                         controlMode = ControlMode.MANUAL_CONTROL;
                         intakeMacroIterator = IntakeMacroIterator.READY_FOR_STONE;
                         break;
                 }
                 break;
             case MANUAL_CONTROL:
-                count++;
                 intakeMotor.setPower(userArmPower);
                 switch (servoState){
                     case OPEN:
@@ -109,18 +118,7 @@ public class Intake implements Subsystem {
         this.controlMode = controlMode;
     }
 
-    private boolean startedTimer = false;
-    public boolean runIntakeMotorForTime(double seconds){
-        if(!startedTimer) {
-            elapsedTime = new ElapsedTime(0);
-            startedTimer = true;
-        }
-        if(elapsedTime.time(TimeUnit.SECONDS) > seconds)
-            return true;
-        else
-            intakeMotor.setPower(1);
-        return false;
-    }
+
 
     public enum ServoState {
         OPEN,
