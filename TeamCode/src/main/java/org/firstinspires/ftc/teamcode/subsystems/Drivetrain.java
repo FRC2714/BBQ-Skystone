@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.localization.Kinematics;
 import org.firstinspires.ftc.teamcode.localization.MecanumKinematics;
 import org.firstinspires.ftc.teamcode.localization.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.PIDFController;
+import org.firstinspires.ftc.teamcode.utils.TrapezoidProfile;
 import org.openftc.revextensions2.ExpansionHubEx;
 import org.openftc.revextensions2.ExpansionHubMotor;
 import org.openftc.revextensions2.RevBulkData;
@@ -67,8 +68,13 @@ public class Drivetrain implements Subsystem {
     enum State {
         TELEOP,
         OPEN_LOOP,
-        CLOSED_LOOP
+        CLOSED_LOOP,
+        FOLLOW_PROFILE
     }
+
+    // profiles
+    private TrapezoidProfile axialProfile;
+    private double profileStartTime = 0.0;
 
     private Telemetry t;
 
@@ -117,7 +123,7 @@ public class Drivetrain implements Subsystem {
         currentEstimatedPose = getEstimatedPose();
         t.addData("heading: ", Math.toDegrees(currentRawHeading));
         t.addData("normHeading: ", Math.toDegrees(norm(currentRawHeading)));
-        
+
         switch(currentState) {
             case TELEOP:
                 setRobotKinematics(targetVelocity, new Pose2d()); // leaving acceleration empty
@@ -133,6 +139,11 @@ public class Drivetrain implements Subsystem {
 
                 Pose2d velocityCorrection = new Pose2d(translationalCorrection, lateralCorrection, headingCorrection);
                 setRobotKinematics(targetVelocity.plus(velocityCorrection), new Pose2d());
+            case FOLLOW_PROFILE:
+                double currentTime = System.currentTimeMillis() / 10e3;
+                double elapsedTime = currentTime - profileStartTime;
+                double velocity = axialProfile.calculate(elapsedTime).velocity;
+                setRobotKinematics(new Pose2d(velocity,0.0,0.0), new Pose2d());
         }
 
         t.addData("Target Velocity x: ", targetVelocity.x);
@@ -225,6 +236,16 @@ public class Drivetrain implements Subsystem {
     }
 
     // utilities
+
+    private TrapezoidProfile buildTrapezoidProfile(double kMaxV, double kMaxA, TrapezoidProfile.State start, TrapezoidProfile.State goal) {
+        TrapezoidProfile.Constraints constraints = new TrapezoidProfile.Constraints(kMaxV, kMaxA);
+        return new TrapezoidProfile(constraints, start, goal);
+    }
+
+    public void setAxialProfile(double kMaxV, double kMaxA, TrapezoidProfile.State start, TrapezoidProfile.State goal) {
+        axialProfile = buildTrapezoidProfile(kMaxV, kMaxA, start, goal);
+        profileStartTime = System.currentTimeMillis() / 10e3;
+    }
 
     // norm angle in radians
     private static double TAU = Math.PI * 2;
