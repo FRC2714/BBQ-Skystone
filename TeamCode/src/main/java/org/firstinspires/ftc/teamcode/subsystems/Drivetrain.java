@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -16,6 +17,7 @@ import org.firstinspires.ftc.teamcode.localization.Kinematics;
 import org.firstinspires.ftc.teamcode.localization.MecanumKinematics;
 import org.firstinspires.ftc.teamcode.localization.Pose2d;
 import org.firstinspires.ftc.teamcode.utils.PIDFController;
+import org.firstinspires.ftc.teamcode.utils.ProfiledPIDFController;
 import org.firstinspires.ftc.teamcode.utils.TrapezoidProfile;
 import org.openftc.revextensions2.ExpansionHubEx;
 import org.openftc.revextensions2.ExpansionHubMotor;
@@ -24,10 +26,10 @@ import org.openftc.revextensions2.RevBulkData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+@Config
 public class Drivetrain implements Subsystem {
 
-    private static final int TICKS_PER_INCH = 30;
+    private static final int TICKS_PER_INCH = 31;
     private ExpansionHubEx expansionHub;
     private RevBulkData bulkData;
     private HardwareMap hwMap;
@@ -38,17 +40,22 @@ public class Drivetrain implements Subsystem {
     private BNO055IMU imu;
 
     // Coeffecients
-    PIDCoefficients translationalCoeffecients = new PIDCoefficients(0.8,0,0);
-    PIDCoefficients lateralCoeffecients = new PIDCoefficients(0.5,0,0);
-    PIDCoefficients headingCoeffecients = new PIDCoefficients(0.9,0,0);
+    public static PIDCoefficients translationalCoeffecients = new PIDCoefficients(1.15,0,0.002);
+    public static PIDCoefficients lateralCoeffecients = new PIDCoefficients(2.0,0,0);
+    public static PIDCoefficients headingCoeffecients = new PIDCoefficients(2.61,0,0.002);
 
     // PIDF Controllers
+    // TODO: switch to profiled controllers
     private PIDFController translationalController = new PIDFController(translationalCoeffecients, 0.0, 0,0);
     private PIDFController lateralController = new PIDFController(lateralCoeffecients, 0.0,0.0,0.0);
-    private PIDFController headingController = new PIDFController(headingCoeffecients, 0.225, 0.0,0.0);
+    private PIDFController headingController = new PIDFController(headingCoeffecients, 0.0, 0.0,0.0);
+
+    // Profiled PIDF Controllers and constraints
 
     // targets
-    private Pose2d targetVelocity = new Pose2d(0.0,0.0,0.0); // MAKE SURE THIS STARTS AS 0
+    private Pose2d targetVelocity = new Pose2d(0.0,0.0,0); // MAKE SURE THIS STARTS AS 0
+    private double[] targetPowers;
+    private List<Pose2d> targetPoses;
 
     // current values
     private State currentState = State.CLOSED_LOOP;
@@ -60,21 +67,27 @@ public class Drivetrain implements Subsystem {
     // previous values (for deltas)
     private List<Double> lastWheelPositions;
     private double lastRawHeading = 0.0;
-    private Pose2d targetPose = new Pose2d(100,0,0);
+    private Pose2d targetPose = new Pose2d(0,0,90);
 
     // constants
     private static final double TELEOP_MAX_V = 45;
     private static final double TELEOP_MAX_HEADING_V = 2;
-    enum State {
+
+    private int poseIdx = 0;
+
+    public enum State {
         TELEOP,
         OPEN_LOOP,
         CLOSED_LOOP,
-        FOLLOW_PROFILE
+        FOLLOW_PROFILE,
+        IDLE
     }
 
     // profiles
     private TrapezoidProfile axialProfile;
     private double profileStartTime = 0.0;
+
+    boolean isFollowing = true;
 
     private Telemetry t;
 
@@ -113,6 +126,18 @@ public class Drivetrain implements Subsystem {
 
         lastWheelPositions = new ArrayList<>();
         currentWheelPositions = new ArrayList<>();
+        targetPowers = new double[4];
+
+        targetPoses = new ArrayList<>();
+        targetPoses.add(new Pose2d(24,0,0));
+        targetPoses.add(new Pose2d(24,0,0));
+        targetPoses.add(new Pose2d(24,0,Math.toRadians(-90)));
+        targetPoses.add(new Pose2d(24, -70, Math.toRadians(-90)));
+        targetPoses.add(new Pose2d(24, -70, 0));
+        targetPoses.add(new Pose2d(15, -70, 0));
+        targetPoses.add(new Pose2d(15, -70, Math.toRadians(-60)));
+
+        targetPose = targetPoses.get(0);
     }
 
     @Override
@@ -129,9 +154,26 @@ public class Drivetrain implements Subsystem {
                 setRobotKinematics(targetVelocity, new Pose2d()); // leaving acceleration empty
                 break;
             case CLOSED_LOOP:
-                translationalController.targetPosition = targetPose.x - currentEstimatedPose.x;
-                lateralController.targetPosition = targetPose.y - currentEstimatedPose.y;
-                headingController.targetPosition = targetPose.heading - currentEstimatedPose.heading;
+                Pose2d poseError = Kinematics.calculatePoseError(targetPose, currentEstimatedPose);
+                double xError = poseError.x;
+                double yError = poseError.y;
+                double headingError = poseError.heading;
+
+                translationalController.targetPosition = xError;
+                lateralController.targetPosition = yError;
+                headingController.targetPosition = headingError;
+
+                if (Math.abs(xError) < 2 && Math.abs(yError) < 2 && Math.abs(headingError) < Math.toRadians(1.8)) {
+                    if (poseIdx < targetPoses.size() - 1){
+                        t.log().add("FINISHED TLEJDLS GAY");
+                        poseIdx++;
+                        targetPose = targetPoses.get(poseIdx);
+
+                    }
+                    else  {t.log().add("WEDONEWEDONDEN");
+                        setRobotKinematics(new Pose2d(0,0,0), new Pose2d()); currentState = State.IDLE; }
+                    return;
+                }
 
                 double translationalCorrection = translationalController.update(0,targetVelocity.x,0.0);
                 double lateralCorrection = lateralController.update(0,targetVelocity.y, 0.0);
@@ -139,11 +181,20 @@ public class Drivetrain implements Subsystem {
 
                 Pose2d velocityCorrection = new Pose2d(translationalCorrection, lateralCorrection, headingCorrection);
                 setRobotKinematics(targetVelocity.plus(velocityCorrection), new Pose2d());
-            case FOLLOW_PROFILE:
+
+
+                break;
+            case FOLLOW_PROFILE: // IGNORE FOR NOW
                 double currentTime = System.currentTimeMillis() / 10e3;
                 double elapsedTime = currentTime - profileStartTime;
                 double velocity = axialProfile.calculate(elapsedTime).velocity;
                 setRobotKinematics(new Pose2d(velocity,0.0,0.0), new Pose2d());
+                break;
+            case OPEN_LOOP:
+                setMotorPowers(targetPowers[0], targetPowers[1],targetPowers[2],targetPowers[3]); break;
+
+            case IDLE:
+                break;
         }
 
         t.addData("Target Velocity x: ", targetVelocity.x);
@@ -175,7 +226,7 @@ public class Drivetrain implements Subsystem {
         t.addData("bl velocity: ", velocities.get(1));
         t.addData("br velocity: ", velocities.get(2));
         t.addData("fr velocities: ", velocities.get(3));
-        List<Double> powers = Kinematics.calculateMotorFeedforward(velocities, new ArrayList<>(), 0.0225, 0.0,0.0);
+        List<Double> powers = Kinematics.calculateMotorFeedforward(velocities, new ArrayList<>(), 0.0220, 0.0,0.0);
         t.addData("fl power: ", powers.get(0));
         t.addData("bl powers: ", powers.get(1));
         t.addData("br powers: ",powers.get(2));
@@ -242,9 +293,19 @@ public class Drivetrain implements Subsystem {
         return new TrapezoidProfile(constraints, start, goal);
     }
 
-    public void setAxialProfile(double kMaxV, double kMaxA, TrapezoidProfile.State start, TrapezoidProfile.State goal) {
-        axialProfile = buildTrapezoidProfile(kMaxV, kMaxA, start, goal);
-        profileStartTime = System.currentTimeMillis() / 10e3;
+    public void setState(State state) {
+        this.currentState = state;
+    }
+
+    public void setTargetPose(Pose2d targetPose) {
+        this.targetPose = targetPose;
+    }
+
+    public void setTargetPowers(double fl, double bl, double br, double fr) {
+        targetPowers[0] = fl;
+        targetPowers[1] = bl;
+        targetPowers[2] = br;
+        targetPowers[3] = fr;
     }
 
     // norm angle in radians

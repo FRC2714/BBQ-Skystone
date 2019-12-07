@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.localization;
 
+import org.firstinspires.ftc.teamcode.utils.Angle;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,5 +45,13 @@ public class Kinematics {
         }
         return fieldPose.plus(fieldPoseDelta);
     }
+
+    public static Pose2d calculatePoseError(Pose2d targetFieldPose, Pose2d currentFieldPose) {
+        return new Pose2d(
+                targetFieldPose.minus(currentFieldPose).vec().rotated(-currentFieldPose.heading),
+                Angle.normDelta(targetFieldPose.heading - currentFieldPose.heading)
+        );
+    }
+
 
 }

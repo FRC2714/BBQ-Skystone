@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.localization.Pose2d;
 import org.firstinspires.ftc.teamcode.subsystems.Arm;
+import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.utils.JoystickTransform;
 
@@ -23,6 +24,9 @@ public class TrueTeleopTest extends LinearOpMode {
         robot = new Robot(this);
         robot.init();
         transform = new JoystickTransform();
+
+        robot.drivetrain.setState(Drivetrain.State.TELEOP);
+
         waitForStart();
         while (opModeIsActive() && !isStopRequested()) {
 

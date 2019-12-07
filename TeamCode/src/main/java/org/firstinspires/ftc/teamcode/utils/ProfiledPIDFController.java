@@ -21,6 +21,7 @@ public class ProfiledPIDFController {
         double period = currentTimestamp - lastUpdateTimestamp;
         setpoint = profile.calculate(period);
         pidfController.targetPosition = setpoint.position;
+        lastUpdateTimestamp = currentTimestamp;
         return  pidfController.update(input);
     }
 
