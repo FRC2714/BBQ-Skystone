@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDCoefficients;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -29,6 +30,12 @@ import java.util.List;
 @Config
 public class Drivetrain implements Subsystem {
 
+    ElapsedTime timer;
+
+    // SOME positions
+    private static final Pose2d BLUE_BLOCK = new Pose2d(24,0,0);
+    private static final Pose2d BLUE_FOUNDATION = new Pose2d(24, -70, 0);
+
     private static final int TICKS_PER_INCH = 31;
     private ExpansionHubEx expansionHub;
     private RevBulkData bulkData;
@@ -40,9 +47,9 @@ public class Drivetrain implements Subsystem {
     private BNO055IMU imu;
 
     // Coeffecients
-    public static PIDCoefficients translationalCoeffecients = new PIDCoefficients(1.15,0,0.002);
+    public static PIDCoefficients translationalCoeffecients = new PIDCoefficients(1.25,0.0004,0.004);
     public static PIDCoefficients lateralCoeffecients = new PIDCoefficients(2.0,0,0);
-    public static PIDCoefficients headingCoeffecients = new PIDCoefficients(2.61,0,0.002);
+    public static PIDCoefficients headingCoeffecients = new PIDCoefficients(2.61,0.0004,0.002);
 
     // PIDF Controllers
     // TODO: switch to profiled controllers
@@ -58,7 +65,7 @@ public class Drivetrain implements Subsystem {
     private List<Pose2d> targetPoses;
 
     // current values
-    private State currentState = State.CLOSED_LOOP;
+    private State currentState = State.IDLE;
     private Pose2d currentVelocity  = new Pose2d();
     private double currentRawHeading = 0.0;
     private Pose2d currentEstimatedPose = new Pose2d();
@@ -80,6 +87,7 @@ public class Drivetrain implements Subsystem {
         OPEN_LOOP,
         CLOSED_LOOP,
         FOLLOW_PROFILE,
+        FOLLOW_PATH,
         IDLE
     }
 
@@ -91,10 +99,15 @@ public class Drivetrain implements Subsystem {
 
     private Telemetry t;
 
-    public Drivetrain(HardwareMap map, Telemetry t) {
+    private Arm arm;
+
+
+
+    public Drivetrain(HardwareMap map, Telemetry t, Arm arm) {
         this.t = t;
         this.hwMap = map;
         this.expansionHub = hwMap.get(ExpansionHubEx.class, "Expansion Hub 2");
+        this.arm = arm;
 
         frontLeft = (ExpansionHubMotor) hwMap.dcMotor.get("left_front");
         frontRight = (ExpansionHubMotor) hwMap.dcMotor.get("right_front");
@@ -129,6 +142,7 @@ public class Drivetrain implements Subsystem {
         targetPowers = new double[4];
 
         targetPoses = new ArrayList<>();
+        /*
         targetPoses.add(new Pose2d(24,0,0));
         targetPoses.add(new Pose2d(24,0,0));
         targetPoses.add(new Pose2d(24,0,Math.toRadians(-90)));
@@ -137,7 +151,8 @@ public class Drivetrain implements Subsystem {
         targetPoses.add(new Pose2d(15, -70, 0));
         targetPoses.add(new Pose2d(15, -70, Math.toRadians(-60)));
 
-        targetPose = targetPoses.get(0);
+         */
+
     }
 
     @Override
@@ -153,7 +168,7 @@ public class Drivetrain implements Subsystem {
             case TELEOP:
                 setRobotKinematics(targetVelocity, new Pose2d()); // leaving acceleration empty
                 break;
-            case CLOSED_LOOP:
+            case FOLLOW_PATH:
                 Pose2d poseError = Kinematics.calculatePoseError(targetPose, currentEstimatedPose);
                 double xError = poseError.x;
                 double yError = poseError.y;
@@ -163,12 +178,13 @@ public class Drivetrain implements Subsystem {
                 lateralController.targetPosition = yError;
                 headingController.targetPosition = headingError;
 
-                if (Math.abs(xError) < 2 && Math.abs(yError) < 2 && Math.abs(headingError) < Math.toRadians(1.8)) {
+                if ((Math.abs(xError) < 2 && Math.abs(yError) < 2 && Math.abs(headingError) < Math.toRadians(1.8)) || timer.seconds() > 2.5) {
                     if (poseIdx < targetPoses.size() - 1){
                         t.log().add("FINISHED TLEJDLS GAY");
                         poseIdx++;
                         targetPose = targetPoses.get(poseIdx);
 
+                        timer.reset();
                     }
                     else  {t.log().add("WEDONEWEDONDEN");
                         setRobotKinematics(new Pose2d(0,0,0), new Pose2d()); currentState = State.IDLE; }
@@ -182,7 +198,7 @@ public class Drivetrain implements Subsystem {
                 Pose2d velocityCorrection = new Pose2d(translationalCorrection, lateralCorrection, headingCorrection);
                 setRobotKinematics(targetVelocity.plus(velocityCorrection), new Pose2d());
 
-
+                t.log().add("havekine");
                 break;
             case FOLLOW_PROFILE: // IGNORE FOR NOW
                 double currentTime = System.currentTimeMillis() / 10e3;
@@ -286,6 +302,8 @@ public class Drivetrain implements Subsystem {
         return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle;
     }
 
+    public State getState() { return currentState; }
+
     // utilities
 
     private TrapezoidProfile buildTrapezoidProfile(double kMaxV, double kMaxA, TrapezoidProfile.State start, TrapezoidProfile.State goal) {
@@ -295,10 +313,18 @@ public class Drivetrain implements Subsystem {
 
     public void setState(State state) {
         this.currentState = state;
+        if (currentState == State.FOLLOW_PATH)
+            timer = new ElapsedTime(ElapsedTime.Resolution.SECONDS);
     }
 
     public void setTargetPose(Pose2d targetPose) {
         this.targetPose = targetPose;
+    }
+
+    public void setTargetPoses(List<Pose2d> poses) {
+        this.targetPoses = poses;
+        setTargetPose(targetPoses.get(0));
+        poseIdx = 0;
     }
 
     public void setTargetPowers(double fl, double bl, double br, double fr) {

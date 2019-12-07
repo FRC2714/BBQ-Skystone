@@ -9,7 +9,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class Arm implements Subsystem {
 
-    private static Arm arm;
+    public static Arm arm;
     private HardwareMap hm;
 
     private DcMotorEx armMotor;
@@ -46,10 +46,12 @@ public class Arm implements Subsystem {
     }
 
     public int count = 0;
+    public boolean isMoving = true;
     @Override
     public void update() {
         switch (controlMode){
             case MACRO_CONTROL:
+
                 if (!armMotor.isBusy() || macroRunAgain){
                     switch (targetArmState) {
                         case START:
@@ -69,11 +71,13 @@ public class Arm implements Subsystem {
                             macroRunAgain = false;
                             break;
                         case AUTO_PICKUP:
+                            isMoving = true;
                             switch (armMacroIterator){
                                 case STONE_PICKUP:
                                     count++;
                                     goToPosition(-1500, 1);
                                     if(isArmAtTarget()) {
+                                        tele.addData("BRUH MOMENT = ", 222222222);
                                         armMacroIterator = ArmMacroIterator.LOW_HOLD;
                                     }
                                     break;
@@ -83,6 +87,9 @@ public class Arm implements Subsystem {
                                         if (isArmAtTarget()) {
                                             macroRunAgain = false;
                                         }
+
+                                        if(!armMotor.isBusy())
+                                            isMoving = false;
                                     }
                                     break;
                             }
@@ -100,6 +107,10 @@ public class Arm implements Subsystem {
                 armMotor.setPower(userArmPower);
                 break;
         }
+    }
+
+    public boolean isMacroRunAgain() {
+        return macroRunAgain;
     }
 
     private void resetEncoders() {
@@ -141,6 +152,10 @@ public class Arm implements Subsystem {
 
     public void setArmPower(double power){
         userArmPower = power;
+    }
+
+    public boolean moving() {
+        return armMotor.isBusy() && Intake.getInstance(hm, tele).intakeMotor.isBusy();
     }
 
     public enum ArmState {

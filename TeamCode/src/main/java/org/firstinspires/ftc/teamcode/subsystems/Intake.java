@@ -15,7 +15,7 @@ public class Intake implements Subsystem {
     private HardwareMap hardwareMap;
     private Telemetry tele;
 
-    private DcMotorEx intakeMotor;
+    public DcMotorEx intakeMotor;
     private Servo intakeServo;
 
     private ElapsedTime elapsedTime;
@@ -28,7 +28,7 @@ public class Intake implements Subsystem {
 
     public double userArmPower;
 
-    private static Intake intake;
+    public static Intake intake;
 
     public static Intake getInstance(HardwareMap hm, Telemetry tele) {
         if (intake == null) intake = new Intake(hm, tele);
@@ -70,6 +70,8 @@ public class Intake implements Subsystem {
 
                         if(System.currentTimeMillis() - startingTime > 0.5e3){
                             intakeMacroIterator = IntakeMacroIterator.HOLDING;
+                            tele.addData("BRUH", 0);
+                            tele.update();
                         }
                         break;
                     case HOLDING:

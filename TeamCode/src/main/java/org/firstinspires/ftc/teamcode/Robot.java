@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Robot {
-    private Telemetry telemetry;
+    public Telemetry telemetry;
     private HardwareMap hw;
 
     public Drivetrain drivetrain;
@@ -28,9 +28,10 @@ public class Robot {
     }
 
     public void init() {
-       drivetrain = new Drivetrain(hw, telemetry);
         arm = Arm.getInstance(hw, telemetry);
         intake = Intake.getInstance(hw, telemetry);
+        drivetrain = new Drivetrain(hw, telemetry, arm);
+
        subsystems.add(drivetrain);
        subsystems.add(arm);
        subsystems.add(intake);
