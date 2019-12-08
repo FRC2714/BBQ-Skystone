@@ -1,28 +1,25 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.localization.Pose2d;
 import org.firstinspires.ftc.teamcode.subsystems.Arm;
-import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
-import org.firstinspires.ftc.teamcode.utils.AutonmousScheduler;
+import org.firstinspires.ftc.teamcode.utils.AutonomousRunner;
 import org.firstinspires.ftc.teamcode.utils.JoystickTransform;
 
 @TeleOp(name="DrivetrainTest")
 public class DrivetrainTest extends LinearOpMode {
     Robot robot;
     JoystickTransform transform;
-    AutonmousScheduler scheduler;
+    AutonomousRunner scheduler;
     @Override
     public void runOpMode() {
         robot = new Robot(this);
         robot.init();
 
         transform = new JoystickTransform();
-        scheduler = new AutonmousScheduler(robot);
+        scheduler = new AutonomousRunner(robot);
         waitForStart();
         if (opModeIsActive() && !isStopRequested()) {
             /**robot.run();

@@ -37,7 +37,7 @@ public class Robot {
        subsystems.add(intake);
     }
 
-    public void run() {
+    public void update() {
         for (Subsystem s : subsystems)
             s.update();
     }

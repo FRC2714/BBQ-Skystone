@@ -59,7 +59,7 @@ public class TrueTeleopTest extends LinearOpMode {
             telemetry.addData("Right Trigger", gamepad2.right_trigger);
             telemetry.update();
 
-            robot.run();
+            robot.update();
             Pose2d v = transform.transform(new Pose2d(-gamepad1.left_stick_x, -gamepad1.left_stick_y, -gamepad1.right_stick_x));
             robot.drivetrain.setControllerVelocity(v);
             telemetry.addData("x: ", -gamepad1.left_stick_y);
