@@ -13,7 +13,8 @@ public class Kinematics {
     public static List<Double> calculateMotorFeedforward(List<Double> velocities, List<Double> acclerations, double kV, double kA, double kStatic) {
         List<Double> motorPowers = new ArrayList<>();
         for (double v : velocities) {
-            motorPowers.add(kV * v);
+            double ks = 0;
+            motorPowers.add(kV * v + ks);
         }
         return motorPowers;
     }

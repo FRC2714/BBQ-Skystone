@@ -47,9 +47,9 @@ public class Drivetrain implements Subsystem {
     private BNO055IMU imu;
 
     // Coeffecients
-    public static PIDCoefficients translationalCoeffecients = new PIDCoefficients(1.25,0.0004,0.004);
+    public static PIDCoefficients translationalCoeffecients = new PIDCoefficients(1.25,0.001,0.004);
     public static PIDCoefficients lateralCoeffecients = new PIDCoefficients(2.0,0,0);
-    public static PIDCoefficients headingCoeffecients = new PIDCoefficients(2.61,0.0004,0.002);
+    public static PIDCoefficients headingCoeffecients = new PIDCoefficients(2.75,0.0004,0.002);
 
     // PIDF Controllers
     // TODO: switch to profiled controllers
@@ -178,7 +178,7 @@ public class Drivetrain implements Subsystem {
                 lateralController.targetPosition = yError;
                 headingController.targetPosition = headingError;
 
-                if ((Math.abs(xError) < 2 && Math.abs(yError) < 2 && Math.abs(headingError) < Math.toRadians(1.8)) || timer.seconds() > 2.5) {
+                if ((Math.abs(xError) < 2 && Math.abs(yError) < 2 && Math.abs(headingError) < Math.toRadians(2.5)) || timer.seconds() > 2.5) {
                     if (poseIdx < targetPoses.size() - 1){
                         t.log().add("FINISHED TLEJDLS GAY");
                         poseIdx++;
@@ -345,5 +345,9 @@ public class Drivetrain implements Subsystem {
             newAngle -= TAU;
 
         return newAngle;
+    }
+
+    public void setCurrentEstimatedPose(Pose2d pose) {
+        this.currentEstimatedPose = pose;
     }
 }

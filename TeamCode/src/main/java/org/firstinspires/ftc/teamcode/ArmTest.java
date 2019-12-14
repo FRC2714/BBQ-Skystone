@@ -55,7 +55,7 @@ public class ArmTest extends LinearOpMode {
             telemetry.addData("User Arm Power: ", intake.userArmPower);
             telemetry.addData("Counting manual Loop ", intake.count);
             telemetry.addData("Right Trigger", gamepad2.right_trigger);
-            telemetry.update();
+            //telemetry.update();
         }
     }
 }

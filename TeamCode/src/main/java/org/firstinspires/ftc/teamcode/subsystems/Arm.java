@@ -45,10 +45,15 @@ public class Arm implements Subsystem {
         armMacroIterator = ArmMacroIterator.STONE_PICKUP;
     }
 
+//    public void resetArmAfterAuton(){
+//       targetArmState = ArmState.ARM_RESET;
+//    }
+
     public int count = 0;
     public boolean isMoving = true;
     @Override
     public void update() {
+
         switch (controlMode){
             case MACRO_CONTROL:
 
@@ -75,7 +80,7 @@ public class Arm implements Subsystem {
                             switch (armMacroIterator){
                                 case STONE_PICKUP:
                                     count++;
-                                    goToPosition(-1500, 1);
+                                    goToPosition(-1550, 1);
                                     if(isArmAtTarget()) {
                                         tele.addData("BRUH MOMENT = ", 222222222);
                                         armMacroIterator = ArmMacroIterator.LOW_HOLD;
@@ -94,6 +99,14 @@ public class Arm implements Subsystem {
                                     break;
                             }
                             break;
+                        case ARM_RESET:
+                            goToPosition(350, 1);
+                            if(isArmAtTarget()) {
+                                resetEncoders();
+                                targetArmState = ArmState.START;
+                            }
+                            break;
+
                     }
                 }
                 if(isArmAtTarget() && !macroRunAgain) {
@@ -163,7 +176,8 @@ public class Arm implements Subsystem {
         HIGH_HOLD,
         LOW_HOLD,
         STONE_PICKUP,
-        AUTO_PICKUP
+        AUTO_PICKUP,
+        ARM_RESET
     }
 
     public enum ControlMode{
@@ -176,4 +190,7 @@ public class Arm implements Subsystem {
         LOW_HOLD
     }
 
+    public void resetArm() {
+        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
 }

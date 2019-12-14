@@ -17,6 +17,8 @@ public class Intake implements Subsystem {
 
     public DcMotorEx intakeMotor;
     private Servo intakeServo;
+    private Servo leftFoundationServo;
+    private Servo rightFoundationServo;
 
     private ElapsedTime elapsedTime;
 
@@ -40,9 +42,13 @@ public class Intake implements Subsystem {
         tele = telemetry;
         intakeMotor = this.hardwareMap.get(DcMotorEx.class, "intake_motor");
         intakeServo = this.hardwareMap.get(Servo.class, "intake_servo");
+        leftFoundationServo = this.hardwareMap.get(Servo.class, "foundation_servo_left");
+        rightFoundationServo = this.hardwareMap.get(Servo.class, "foundation_servo_right");
 
         intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         controlMode = ControlMode.MANUAL_CONTROL;
+
+
     }
 
     public int count;
@@ -118,6 +124,16 @@ public class Intake implements Subsystem {
 
     public void setControlMode(ControlMode controlMode) {
         this.controlMode = controlMode;
+    }
+
+    public void setFoundationServosDown(){
+        leftFoundationServo.setPosition(1);
+        rightFoundationServo.setPosition(0);
+    }
+
+    public void setFoundationServosUp(){
+        leftFoundationServo.setPosition(0.5);
+        rightFoundationServo.setPosition(0.5);
     }
 
 

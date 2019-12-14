@@ -16,6 +16,7 @@ public class TrueTeleopTest extends LinearOpMode {
     private Arm arm;
     private Intake intake;
 
+
     @Override
     public void runOpMode() {
         arm = Arm.getInstance(hardwareMap, telemetry);
@@ -26,8 +27,12 @@ public class TrueTeleopTest extends LinearOpMode {
         transform = new JoystickTransform();
 
         robot.drivetrain.setState(Drivetrain.State.TELEOP);
+//        robot.arm.resetArmAfterAuton();
 
-        waitForStart();
+        while (!opModeIsActive() && !isStopRequested()) {
+            if(gamepad1.a)
+                robot.arm.resetArm();
+        }
         while (opModeIsActive() && !isStopRequested()) {
 
             if(gamepad2.a)
@@ -38,6 +43,11 @@ public class TrueTeleopTest extends LinearOpMode {
                 arm.setArmTargetState(Arm.ControlMode.MACRO_CONTROL, Arm.ArmState.AUTO_PICKUP);
                 intake.setControlMode(Intake.ControlMode.MACRO_CONTROL);
             }
+
+            if(gamepad1.a)
+                intake.setFoundationServosDown();
+            if(gamepad1.y)
+                intake.setFoundationServosUp();
 
             arm.setArmPower(gamepad2.left_stick_y);
 
