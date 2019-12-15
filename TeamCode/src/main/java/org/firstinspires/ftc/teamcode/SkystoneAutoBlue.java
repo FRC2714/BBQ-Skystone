@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.vuforia.Image;
@@ -26,8 +27,8 @@ import org.opencv.core.Mat;
 
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 
-@TeleOp(name="DrivetrainTest")
-public class DrivetrainTest extends LinearOpMode {
+@Autonomous(name="SkystoneAutoBlue")
+public class SkystoneAutoBlue extends LinearOpMode {
     Robot robot;
     JoystickTransform transform;
     AutonomousRunner scheduler;
@@ -90,6 +91,8 @@ public class DrivetrainTest extends LinearOpMode {
 
     FtcDashboard dashboard;
 
+    int pos = 1;
+
     @Override
     public void runOpMode() {
         robot = new Robot(this);
@@ -106,7 +109,7 @@ public class DrivetrainTest extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
 
         Mat frame;
-
+        /*
         while (!opModeIsActive() && !isStopRequested()) {
             VuforiaLocalizer.CloseableFrame vuFrame = null;
             if (!vuforia.getFrameQueue().isEmpty()) {
@@ -129,13 +132,19 @@ public class DrivetrainTest extends LinearOpMode {
                         Bitmap displayBitmap = Bitmap.createBitmap(ret.width(), ret.height(), Bitmap.Config.RGB_565);
                         Utils.matToBitmap(ret, displayBitmap);
                         dashboard.sendImage(displayBitmap);
+                        int vu = p.getVumarkLeftBoundary();
+                        if (vu < 250) pos = 0;
+                        else if (vu > 250 && vu < 620) pos = 1;
+                        else pos = 2;
                     }
                 }
             }
             dashboard.sendTelemetryPacket(new TelemetryPacket());
             telemetry.addData("gfsdafdsy: ",p.getVumarkLeftBoundary());
             telemetry.update();
-        }
+        }*/
+
+        waitForStart();
 
         if (opModeIsActive() && !isStopRequested()) {
             /**robot.run();
@@ -145,7 +154,8 @@ public class DrivetrainTest extends LinearOpMode {
             telemetry.addData("y: ", -gamepad1.left_stick_x);
             telemetry.addData("heading: ", -gamepad1.right_stick_x);
             */
-            scheduler.setBlueBlockPath();
+
+            scheduler.setBlueBlockPath(0);
             telemetry.update();
         }
 

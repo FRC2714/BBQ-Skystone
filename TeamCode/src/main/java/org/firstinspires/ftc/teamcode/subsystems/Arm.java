@@ -68,7 +68,7 @@ public class Arm implements Subsystem {
                             macroRunAgain = false;
                             break;
                         case LOW_HOLD:
-                            goToPosition(-1100, 1);
+                            goToPosition(-1250, 1);
                             macroRunAgain = false;
                             break;
                         case STONE_PICKUP:
@@ -82,13 +82,13 @@ public class Arm implements Subsystem {
                                     count++;
                                     goToPosition(-1550, 1);
                                     if(isArmAtTarget()) {
-                                        tele.addData("BRUH MOMENT = ", 222222222);
+                                        // tele.addData("BRUH MOMENT = ", 222222222);
                                         armMacroIterator = ArmMacroIterator.LOW_HOLD;
                                     }
                                     break;
                                 case LOW_HOLD:
                                     if(Intake.getInstance(hm,tele).intakeMacroIterator == Intake.IntakeMacroIterator.HOLDING) {
-                                        goToPosition(-1100, 1);
+                                        goToPosition(-1250, 1);
                                         if (isArmAtTarget()) {
                                             macroRunAgain = false;
                                         }

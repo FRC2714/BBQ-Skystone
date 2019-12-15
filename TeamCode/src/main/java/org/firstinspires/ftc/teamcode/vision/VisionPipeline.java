@@ -38,8 +38,8 @@ public class VisionPipeline extends OpenCvPipeline{
     // TO IMPROVE FRAMERATE
 
 
-    private final Scalar minHSV = new Scalar(11.8, 161.7, 116.5);
-    private final Scalar maxHSV = new Scalar(30.3, 255.0, 255.0);
+    private final Scalar minHSV = new Scalar(0, 140.7, 100.5);
+    private final Scalar maxHSV = new Scalar(39.3, 255.0, 255.0);
 
     private final Point anchor = new Point(-1,-1);
     private final int erodeIterations = 10;
@@ -47,9 +47,9 @@ public class VisionPipeline extends OpenCvPipeline{
     private final int dilateIterations = 20;
 
     // THESE NEED TO BE TUNED BASED ON YOUR DISTANCE FROM THE BLOCKS
-    private final double minContourArea = 300.0;
-    private final double minContourPerimeter = 1000.0;
-    private final double minContourWidth = 300.0;
+    private final double minContourArea = 120.0;
+    private final double minContourPerimeter = 140.0;
+    private final double minContourWidth = 100.0;
     private final double minContourHeight = 0.0;
 
     private final double cbMin = 105;
@@ -61,7 +61,7 @@ public class VisionPipeline extends OpenCvPipeline{
     // TUNE THESE THEY WILL VARY BASED ON WEBCAM PLACEMENT!!!!!
 
     private final int maxVumarkValue = 80; // used to be 150
-    private final int valleyLength = 40;
+    private final int valleyLength = 28;
 
     private int vumarkLeftBoundary = -1;
 

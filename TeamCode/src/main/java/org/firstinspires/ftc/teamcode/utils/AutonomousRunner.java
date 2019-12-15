@@ -22,9 +22,17 @@ public class AutonomousRunner {
         this.globalTimer = new ElapsedTime(ElapsedTime.Resolution.SECONDS);
     }
 
-    public void setBlueBlockPath() {
+    public void setStrafeRight() {
+        followPath(strafeRight(13));
+    }
+
+    public void setStrafeLeft() {
+        followPath(strafeLeft(13));
+    }
+
+    public void setRedBlockPath(double offset) {
         robot.intake.setFoundationServosUp();
-        followPath(blueStartToBlockTrajectory());
+        followPath(redStartToBlockTrajectory(offset));
 
         robot.arm.setArmTargetState(Arm.ControlMode.MACRO_CONTROL, Arm.ArmState.AUTO_PICKUP);
         robot.intake.setControlMode(Intake.ControlMode.MACRO_CONTROL);
@@ -33,14 +41,14 @@ public class AutonomousRunner {
 
         updateAndBlockFor(3); // give the arm some time to pick up
 
-        followPath(blueBlockToFoundationTrajectory());
+        followPath(redBlockToFoundationTrajectory(offset));
 
         robot.arm.setArmTargetState(Arm.ControlMode.MANUAL_CONTROL, Arm.ArmState.HIGH_HOLD);
         robot.intake.setServoState(Intake.ServoState.OPEN);
         robot.intake.setFoundationServosDown();
 
         updateAndBlockFor(1.25);
-        followPath(blueFoundationToPark());
+        followPath(redFoundationToPark());
 
         robot.drivetrain.setCurrentEstimatedPose(new Pose2d(10,-80, robot.drivetrain.getEstimatedPose().heading));
         robot.intake.setFoundationServosUp();
@@ -49,22 +57,71 @@ public class AutonomousRunner {
 
     }
 
+    public void setBlueBlockPath(double offset) {
+        robot.intake.setFoundationServosUp();
+        followPath(blueStartToBlockTrajectory(offset));
+
+        robot.arm.setArmTargetState(Arm.ControlMode.MACRO_CONTROL, Arm.ArmState.AUTO_PICKUP);
+        robot.intake.setControlMode(Intake.ControlMode.MACRO_CONTROL);
+
+        robot.update();
+
+        updateAndBlockFor(3); // give the arm some time to pick up
+
+        followPath(redBlockToFoundationTrajectory(offset));
+
+        robot.arm.setArmTargetState(Arm.ControlMode.MANUAL_CONTROL, Arm.ArmState.HIGH_HOLD);
+        robot.intake.setServoState(Intake.ServoState.OPEN);
+        robot.intake.setFoundationServosDown();
+
+        updateAndBlockFor(1.25);
+        followPath(redFoundationToPark());
+
+        robot.drivetrain.setCurrentEstimatedPose(new Pose2d(10,80, robot.drivetrain.getEstimatedPose().heading));
+        robot.intake.setFoundationServosUp();
+
+        followPath(redDepotToPark());
+
+    }
+
+    public void setRedFoundationOnly() {
+        followPath(redFoundationOnly());
+        robot.intake.setFoundationServosDown();
+
+    }
+
     private void followPath(List<Pose2d> targetPoses) {
         robot.drivetrain.setTargetPoses(targetPoses);
         robot.drivetrain.setState(Drivetrain.State.FOLLOW_PATH);
         updateRobotWhile(() -> robot.drivetrain.getState() != Drivetrain.State.IDLE);
     }
-
-    private List<Pose2d> blueStartToBlockTrajectory() {
+    private List<Pose2d> redStartToBlockTrajectory(double offset) {
         List<Pose2d> targetPoses = new ArrayList<>();
-        targetPoses.add(new Pose2d(30,0,0));
+        targetPoses.add(new Pose2d(30,offset,0));
         return targetPoses;
     }
 
-    private List<Pose2d> blueBlockToFoundationTrajectory() {
+    private List<Pose2d> blueStartToBlockTrajectory(double offset) {
         List<Pose2d> targetPoses = new ArrayList<>();
-        targetPoses.add(new Pose2d(18,0,0));
-        targetPoses.add(new Pose2d(18,0,Math.toRadians(-90)));
+        targetPoses.add(new Pose2d(30,offset,0));
+        return targetPoses;
+    }
+
+    private List<Pose2d> redBlockToFoundationTrajectory(double offset) {
+        List<Pose2d> targetPoses = new ArrayList<>();
+        targetPoses.add(new Pose2d(18,offset,0));
+        targetPoses.add(new Pose2d(18,offset,Math.toRadians(90)));
+        targetPoses.add(new Pose2d(18, 80, Math.toRadians(90)));
+        targetPoses.add(new Pose2d(18, 80, 0));
+        targetPoses.add(new Pose2d(34, 80, 0));
+
+        return targetPoses;
+    }
+
+    private List<Pose2d> blueBlockToFoundationTrajectory(double offset) {
+        List<Pose2d> targetPoses = new ArrayList<>();
+        targetPoses.add(new Pose2d(18,offset,0));
+        targetPoses.add(new Pose2d(18,offset,Math.toRadians(-90)));
         targetPoses.add(new Pose2d(18, -80, Math.toRadians(-90)));
         targetPoses.add(new Pose2d(18, -80, 0));
         targetPoses.add(new Pose2d(34, -80, 0));
@@ -72,11 +129,19 @@ public class AutonomousRunner {
         return targetPoses;
     }
 
+    private List<Pose2d> redFoundationToPark() {
+        List<Pose2d> targetPoses = new ArrayList<>();
+        targetPoses.add(new Pose2d(34, 80, 0));
+        targetPoses.add(new Pose2d(-12, 80, 0));
+        targetPoses.add(new Pose2d(-12, 80, Math.toRadians(90)));
+        return targetPoses;
+    }
+
     private List<Pose2d> blueFoundationToPark() {
         List<Pose2d> targetPoses = new ArrayList<>();
         targetPoses.add(new Pose2d(34, -80, 0));
-        targetPoses.add(new Pose2d(-10, -80, 0));
-        targetPoses.add(new Pose2d(-10, -80, Math.toRadians(-90)));
+        targetPoses.add(new Pose2d(-12, -80, 0));
+        targetPoses.add(new Pose2d(-12, -80, Math.toRadians(-90)));
         return targetPoses;
     }
 
@@ -86,7 +151,35 @@ public class AutonomousRunner {
         return targetPoses;
     }
 
-    private void updateAndBlockFor(double seconds) {
+    private List<Pose2d> redDepotToPark() {
+        List<Pose2d> targetPoses = new ArrayList<>();
+        targetPoses.add(new Pose2d(10, 40, Math.toRadians(90)));
+        return targetPoses;
+    }
+
+    private List<Pose2d> redFoundationOnly() {
+        List<Pose2d> targetPoses = new ArrayList<>();
+        targetPoses.add(new Pose2d(34,0, 0));
+        return targetPoses;
+    }
+
+    private List<Pose2d> strafeRight(double amt) {
+        List<Pose2d> targetPoses = new ArrayList<>();
+        Pose2d currentPos = robot.drivetrain.getEstimatedPose();
+
+        targetPoses.add(new Pose2d(currentPos.x, currentPos.y - amt, currentPos.heading));
+        return targetPoses;
+    }
+
+    private List<Pose2d> strafeLeft(double amt) {
+        List<Pose2d> targetPoses = new ArrayList<>();
+        Pose2d currentPos = robot.drivetrain.getEstimatedPose();
+
+        targetPoses.add(new Pose2d(currentPos.x, currentPos.y + amt, currentPos.heading));
+        return targetPoses;
+    }
+
+    public void updateAndBlockFor(double seconds) {
         globalTimer.reset();
         updateRobotWhile(() -> globalTimer.seconds() < seconds);
     }
@@ -94,5 +187,7 @@ public class AutonomousRunner {
     private void updateRobotWhile(BooleanSupplier condition) {
         while (condition.getAsBoolean() && !Thread.currentThread().isInterrupted()) { robot.update(); }
     }
+
+
 
 }
